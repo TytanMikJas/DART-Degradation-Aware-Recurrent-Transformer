@@ -3,6 +3,8 @@ message: "If you use DART, please cite the paper below."
 title: "DART: A Degradation-Aware Recurrent Transformer for Archival Film Restoration"
 type: software
 version: 1.0.0
+doi: 10.5281/zenodo.23650318
+date-released: 2026-10-25
 license: MIT
 repository-code: "https://github.com/TytanMikJas/DART-Degradation-Aware-Recurrent-Transformer"
 url: "https://absolutecinema.absolutedegradation.workers.dev"

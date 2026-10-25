@@ -15,6 +15,7 @@ Wrocław University of Science and Technology
 [![Weights](https://img.shields.io/badge/Weights-v1.0.0-6f42c1.svg)](https://github.com/TytanMikJas/DART-Degradation-Aware-Recurrent-Transformer/releases/tag/v1.0.0)
 [![Hugging Face](https://img.shields.io/badge/%F0%9F%A4%97%20Hugging%20Face-DART-ffcc4d.svg)](https://huggingface.co/TytanMikJas/DART-Degradation-Aware-Recurrent-Transformer)
 [![Benchmark](https://img.shields.io/badge/Benchmark-AbsoluteDegradation-2b6cb0.svg)](https://github.com/TytanMikJas/AbsoluteDegradation)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.23650318.svg)](https://doi.org/10.5281/zenodo.23650318)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.11%20|%203.12%20|%203.13-blue.svg)](pyproject.toml)
 
