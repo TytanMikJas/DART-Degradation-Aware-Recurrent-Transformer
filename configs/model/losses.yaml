@@ -1,0 +1,30 @@
+# DART training objective (Sec. 3.5, Table 1). Composed into `losses` by train.yaml.
+
+perceptual_loss:
+  _target_: src.losses.perceptual_loss.PerceptualLoss
+  weights: null
+
+adversarial_loss:
+  _target_: src.losses.adversarial_loss.AdversarialLoss
+  loss_type: "hinge"
+  generator_weight: 0.01  # lambda_adv
+  discriminator_weight: 1.0
+
+pixel_loss:
+  _target_: torch.nn.L1Loss
+
+weighted_multi_loss:
+  _target_: src.losses.weighted_multi_loss.WeightedMultiLoss
+  loss_functions:
+    - ${losses.pixel_loss}
+    - ${losses.perceptual_loss}
+    # The adversarial loss is handled separately by the model;
+    # its weight is adversarial_loss.generator_weight.
+  weights: [1.0, 1.0]  # L1, perceptual
+
+degradation_aware_loss:
+  _target_: src.models.dart.dart_restoration.DegradationAwareLossConfig
+  lambda_rec: 1.0
+  lambda_mask_sup: 0.5  # lambda_mask
+  dice_weight: 0.5  # lambda_dice
+  epsilon: 1e-6

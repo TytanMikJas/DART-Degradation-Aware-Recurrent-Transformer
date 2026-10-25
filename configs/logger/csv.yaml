@@ -1,0 +1,5 @@
+# Default logger: plain CSV files, no account needed.
+# Switch with `logger=wandb`, or disable logging with `logger=null`.
+_target_: pytorch_lightning.loggers.CSVLogger
+save_dir: "outputs/logs"
+name: "${run.name}"

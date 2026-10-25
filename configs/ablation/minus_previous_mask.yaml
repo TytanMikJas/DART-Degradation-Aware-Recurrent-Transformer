@@ -1,0 +1,13 @@
+# @package _global_
+# Table 4, "- previous mask": no recurrent soft-mask propagation (Sec. 3.3).
+# Usage: python scripts/train.py --config-name ablation/minus_previous_mask
+
+defaults:
+  - /train
+  - _self_
+
+run:
+  name: "ablation_minus_previous_mask"
+
+model_conf:
+  use_pre_mask: false

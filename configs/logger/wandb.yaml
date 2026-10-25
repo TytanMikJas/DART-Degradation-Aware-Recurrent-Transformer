@@ -1,0 +1,5 @@
+# Weights & Biases logger (requires `wandb login`). Enable with `logger=wandb`.
+_target_: pytorch_lightning.loggers.WandbLogger
+project: "dart"
+name: "${run.name}-${now:%Y%m%d-%H%M%S}"
+log_model: false

@@ -1,0 +1,44 @@
+cff-version: 1.2.0
+message: "If you use DART, please cite the paper below."
+title: "DART: A Degradation-Aware Recurrent Transformer for Archival Film Restoration"
+type: software
+version: 1.0.0
+license: MIT
+repository-code: "https://github.com/TytanMikJas/DART-Degradation-Aware-Recurrent-Transformer"
+url: "https://absolutecinema.absolutedegradation.workers.dev"
+keywords:
+  - old film restoration
+  - video restoration
+  - archival film
+  - degradation-aware
+  - recurrent transformer
+  - mask supervision
+authors: &authors
+  - family-names: "Jastrzębski"
+    given-names: "Mikołaj"
+    email: "contact@mikjas.com"
+    orcid: "https://orcid.org/0009-0003-3526-935X"
+    affiliation: "Wrocław University of Science and Technology"
+  - family-names: "Kozłowski"
+    given-names: "Wojciech"
+    email: "wojciech.kozlowski@pwr.edu.pl"
+    orcid: "https://orcid.org/0009-0009-1532-4415"
+    affiliation: "Wrocław University of Science and Technology"
+  - family-names: "Adamczewski"
+    given-names: "Kamil"
+    email: "kamil.adamczewski@pwr.edu.pl"
+    orcid: "https://orcid.org/0000-0002-2917-4392"
+    affiliation: "Wrocław University of Science and Technology"
+preferred-citation:
+  type: conference-paper
+  title: "DART: A Degradation-Aware Recurrent Transformer for Archival Film Restoration"
+  authors: *authors
+  collection-title: "Asian Conference on Computer Vision (ACCV)"
+  conference:
+    name: "Asian Conference on Computer Vision (ACCV 2026)"
+  year: 2026
+  url: "https://arxiv.org/abs/2607.21219"
+  identifiers:
+    - type: other
+      value: "arXiv:2607.21219"
+      description: "arXiv preprint"

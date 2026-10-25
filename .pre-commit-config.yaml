@@ -1,0 +1,25 @@
+exclude: ^src/models/optical_flow/third_party/
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.14.2
+    hooks:
+      - id: ruff-check
+        types_or: [ python, pyi ]
+        args: [--fix]
+        stages: [pre-push]
+      - id: ruff-format
+        types_or: [ python, pyi ]
+        stages: [pre-push]
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: trailing-whitespace
+        stages: [pre-commit]
+      - id: end-of-file-fixer
+        stages: [pre-commit]
+      - id: check-yaml
+        stages: [pre-commit]
+      - id: check-toml
+        stages: [pre-commit]
+      - id: check-json
+        stages: [pre-commit]

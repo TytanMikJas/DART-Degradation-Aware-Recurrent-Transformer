@@ -1,0 +1,57 @@
+# @package _global_
+# Restore the evaluation sets with a trained DART model and save the frames.
+#
+# Usage:
+#   python scripts/test.py                                    # released weights
+#   python scripts/test.py checkpoint.path=<last.ckpt>        # your own Lightning checkpoint
+#
+# Each test set is optional: set its root to null to skip it. Restored frames go to
+# <frame_output_handler.save_root>/<set name>/<clip>/<frame>.png and are scored
+# afterwards with scripts/evaluate.py.
+defaults:
+  - /train
+  - _self_
+
+data:
+  num_workers: 0
+  degradation_fn: null  # test sets are fixed footage; no online degradation
+  # Synthetic proxy set with ground truth (<root>/degraded, <root>/gt).
+  test_synthetic_degraded_root: data/synthetic_eval/degraded
+  test_synthetic_clean_root: data/synthetic_eval/gt
+  # AbsoluteDegradation real benchmark ("Real Scene-Split Eval", Kaggle).
+  test_real_degraded_root: data/absolutedegradation_eval
+  test_real_eval_type_name: "absolutedegradation"
+  # SRWOV real benchmark (https://github.com/MaoAYD/MambaOFR).
+  test_real2_degraded_root: data/srwov
+  test_real2_eval_type_name: "srwov"
+  frame_loader_fn: src.data.utils.load_rgb
+
+# RAFT is part of the DART weights; no separate RAFT checkpoint is needed here.
+optical_flow:
+  ckpt_path: null
+
+# The training losses are not used at test time; keep only the pixel loss so the
+# VGG19 weights of the perceptual loss are not downloaded.
+losses:
+  weighted_multi_loss:
+    loss_functions:
+      - ${losses.pixel_loss}
+    weights: [1.0]
+
+frame_output_handler:
+  _target_: src.utils.frame_output_handler.FrameOutputHandler
+  save_root: outputs/results/dart
+
+checkpoint:
+  # DART weights (.safetensors / .pth state dict of the network)
+  # or a Lightning checkpoint (.ckpt) produced by scripts/train.py.
+  path: pretrained_models/dart.safetensors
+
+model:
+  test_chunk_size: 7  # temporal window (the training window)
+  test_chunk_stride: 3
+
+trainer:
+  devices: 1
+  strategy: auto
+  precision: "32-true"

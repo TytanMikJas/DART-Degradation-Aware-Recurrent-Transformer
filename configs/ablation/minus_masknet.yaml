@@ -1,0 +1,14 @@
+# @package _global_
+# Table 4, "- MaskNet": shallow RTN mask head instead of the Dilation Pyramid MaskNet (Sec. 3.2).
+# Usage: python scripts/train.py --config-name ablation/minus_masknet
+
+defaults:
+  - /train
+  - _self_
+
+run:
+  name: "ablation_minus_masknet"
+
+model_conf:
+  mask_net:
+    dilation_pyramid: false

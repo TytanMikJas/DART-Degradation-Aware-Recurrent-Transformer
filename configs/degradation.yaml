@@ -1,0 +1,23 @@
+# Online degradation with AbsoluteDegradation v1.0.0, loaded by train.yaml.
+# Requires an editable install of https://github.com/TytanMikJas/AbsoluteDegradation
+# (its Hydra configs live in the repository, outside the Python package).
+
+degradation:
+  # Export the ground-truth defect mask used for mask supervision (Sec. 3.5).
+  include_mask: true
+
+  # Path to AbsoluteDegradation's data/textures folder (artifact overlays).
+  # Default: a clone of AbsoluteDegradation next to this repository.
+  texture_path: ${oc.env:DEGRADATION_TEXTURE_PATH,../AbsoluteDegradation/data/textures}
+
+  pipeline:
+    _target_: absolute_degradation.factory.create_pipeline_from_config
+    texture_path: ${degradation.texture_path}
+    seed: ${seed}
+    crop_size: ${data.crop_size}
+    include_mask: ${degradation.include_mask}
+
+  degradation_fn:
+    _target_: src.data.degradation_connector.OnlineDegradationFn
+    pipeline: ${degradation.pipeline}
+    include_mask: ${degradation.include_mask}

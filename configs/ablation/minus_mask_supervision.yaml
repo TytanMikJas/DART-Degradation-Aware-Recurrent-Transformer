@@ -1,0 +1,20 @@
+# @package _global_
+# Table 4, "- mask supervision": MaskNet is trained only through the reconstruction loss (Sec. 3.5).
+# Usage: python scripts/train.py --config-name ablation/minus_mask_supervision
+
+defaults:
+  - /train
+  - _self_
+
+run:
+  name: "ablation_minus_mask_supervision"
+
+degradation:
+  include_mask: false
+
+model_conf:
+  expose_gate_mask_logits: false
+
+losses:
+  degradation_aware_loss:
+    lambda_mask_sup: 0.0

@@ -1,0 +1,112 @@
+# DART architecture (paper configuration). Composed into `model_conf` by train.yaml.
+
+# Architecture
+num_feat: 16  # Base feature channels
+embed_dim: 64  # Swin Transformer embedding dimension
+depths: [2, 2, 2]  # Number of SwinTransformerBlocks per RSTB stage
+num_heads: [4, 4, 4]  # Number of attention heads per RSTB stage
+mlp_ratio: 2.0  # MLP expansion ratio
+window_size: 8  # Window size for local attention
+img_size: 256  # Input image size (matches crop_size)
+patch_size: 1  # Patch token size
+drop_rate: 0.0  # Dropout rate
+attn_drop_rate: 0.0  # Attention dropout rate
+drop_path_rate: 0.0  # Stochastic depth rate
+upscale: 1  # Video backbone upscale factor (1 = restoration, no super-resolution)
+resi_connection: "1conv"  # Residual connection type
+in_channels: 3  # Input channels (grayscale footage is replicated to 3 channels)
+out_channels: 3  # Output channels
+
+# DART components (each one is switched off by one ablation in configs/ablation/)
+use_pre_mask: true  # Recurrent soft-mask propagation (Sec. 3.3)
+use_adaln_zero: true  # AdaLN-Zero degradation conditioning (Sec. 3.4)
+expose_gate_mask_logits: true  # Keep MaskNet logits for mask supervision (Sec. 3.5)
+cond_dim: 64  # AdaLN condition vector size
+cond_hidden_dim: 64  # Hidden width of the condition encoder
+
+# Discriminator Configuration
+discriminator_base_channels: 64
+discriminator_use_spectral_norm: true
+discriminator_use_sigmoid: false
+
+
+generator_optimizer_config:
+  _target_: src.models.generic.sequence_adversarial_restoration.OptimizerConfig
+  optimizer_class: torch.optim.Adam
+  learning_rate: 0.0002
+  flow_lr_multiplier: 0.125
+  beta1: 0.9
+  beta2: 0.99
+  lr_decay_start_epoch: 10
+  lr_decay_epochs: 10
+
+discriminator_optimizer_config:
+  _target_: src.models.generic.sequence_adversarial_restoration.OptimizerConfig
+  optimizer_class: torch.optim.Adam
+  learning_rate: 0.0002
+  beta1: 0.9
+  beta2: 0.99
+  lr_decay_start_epoch: 10
+  lr_decay_epochs: 10
+
+forward_resblocks:
+  _target_: src.models.dart.dart_blocks.SwinSpatial
+  img_size: ${model_conf.img_size}
+  patch_size: ${model_conf.patch_size}
+  in_chans: ${model_conf.num_feat}
+  embed_dim: ${model_conf.embed_dim}
+  depths: ${model_conf.depths}
+  num_heads: ${model_conf.num_heads}
+  window_size: ${model_conf.window_size}
+  mlp_ratio: ${model_conf.mlp_ratio}
+  drop_rate: ${model_conf.drop_rate}
+  attn_drop_rate: ${model_conf.attn_drop_rate}
+  drop_path_rate: ${model_conf.drop_path_rate}
+  resi_connection: ${model_conf.resi_connection}
+  upscale: 2  # Internal SwinSpatial upscale (restores 2x downsampling in shallow extraction)
+  upsampler: "nearest+conv"
+  use_adaln_zero: ${model_conf.use_adaln_zero}
+  cond_dim: ${model_conf.cond_dim}
+
+backward_resblocks:
+  _target_: src.models.dart.dart_blocks.SwinSpatial
+  img_size: ${model_conf.img_size}
+  patch_size: ${model_conf.patch_size}
+  in_chans: ${model_conf.num_feat}
+  embed_dim: ${model_conf.embed_dim}
+  depths: ${model_conf.depths}
+  num_heads: ${model_conf.num_heads}
+  window_size: ${model_conf.window_size}
+  mlp_ratio: ${model_conf.mlp_ratio}
+  drop_rate: ${model_conf.drop_rate}
+  attn_drop_rate: ${model_conf.attn_drop_rate}
+  drop_path_rate: ${model_conf.drop_path_rate}
+  resi_connection: ${model_conf.resi_connection}
+  upscale: 2
+  upsampler: "nearest+conv"
+  use_adaln_zero: ${model_conf.use_adaln_zero}
+  cond_dim: ${model_conf.cond_dim}
+
+mask_net:
+  _target_: src.models.dart.mask_net.MaskNet
+  hidden_channels: ${model_conf.num_feat}
+  use_pre_mask: ${model_conf.use_pre_mask}
+  dilation_pyramid: true  # Dilation Pyramid MaskNet (Sec. 3.2); false = shallow RTN head
+
+forward_aggregation:
+  _target_: src.models.dart.temporal_modules.Gated_Aggregation
+  masknet: ${model_conf.mask_net}
+  hidden_channels: ${model_conf.num_feat}
+  kernel_size: 3
+  padding: 1
+  in_channels: ${model_conf.in_channels}
+  use_pre_mask: ${model_conf.use_pre_mask}
+
+backward_aggregation:
+  _target_: src.models.dart.temporal_modules.Gated_Aggregation
+  masknet: ${model_conf.mask_net}
+  hidden_channels: ${model_conf.num_feat}
+  kernel_size: 3
+  padding: 1
+  in_channels: ${model_conf.in_channels}
+  use_pre_mask: ${model_conf.use_pre_mask}

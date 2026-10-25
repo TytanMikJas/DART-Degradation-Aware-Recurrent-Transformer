@@ -1,0 +1,151 @@
+# DART training config (the configuration of the paper, Table 1).
+#
+# Usage:
+#   python scripts/train.py                                   # all visible GPUs, DDP
+#   python scripts/train.py trainer.devices=1                 # single GPU
+#   python scripts/train.py --config-name ablation/minus_adaln  # Table 4 ablation
+#
+# Requirements: an editable install of AbsoluteDegradation v1.0.0 with its textures
+# and blue-noise basis (see README, "Training").
+
+defaults:
+  - /model/losses@losses
+  - /model/dart@model_conf
+  - /degradation
+  - logger: csv
+  - _self_
+
+seed: 3000
+
+run:
+  name: "${oc.env:SLURM_JOB_NAME,dart}"
+
+# Optional path to a Lightning checkpoint to resume training.
+checkpoint_path: null
+
+# Validation clips with precomputed degradations (<val_root>/degraded, <val_root>/gt),
+# e.g. the "Synthetic Degraded Eval" set of AbsoluteDegradation on Kaggle.
+val_root: "data/synthetic_eval"
+
+data:
+  _target_: src.data.video_frame_sequence_dataset.VideoFrameSequenceDataModule
+
+  # Clean training clips (REDS train_sharp: <root>/<clip>/<frame>.png).
+  # Degraded inputs, ground truth and defect masks are generated on the fly.
+  train_clean_root: "data/REDS/train_sharp"
+  val_degraded_root: ${val_root}/degraded
+  val_clean_root: ${val_root}/gt
+
+  batch_size: 1  # clips per GPU
+  num_workers: 6  # forced to 0 on Windows
+  crop_size: 256
+  num_frames: 7
+  normalization_mean: [0.5, 0.5, 0.5]
+  normalization_std: [0.5, 0.5, 0.5]
+
+  # Online degradation function (from degradation.yaml)
+  degradation_fn: ${degradation.degradation_fn}
+  preload: false
+  frame_loader_fn: src.data.utils.load_rgb
+
+  train_transform_geometric:
+    - _target_: albumentations.HorizontalFlip
+      p: 0.25
+    - _target_: albumentations.VerticalFlip
+      p: 0.125
+    - _target_: albumentations.RandomRotate90
+      p: 0.25
+
+  train_transform_photometric: []
+
+  val_transform: []
+
+  image_extensions:
+    - ".png"
+    - ".jpeg"
+    - ".jpg"
+    - ".bmp"
+    - ".tiff"
+    - ".webp"
+
+denormalizer:
+  _target_: src.utils.denormalizer.Denormalizer
+  mean: ${data.normalization_mean}
+  std: ${data.normalization_std}
+
+optical_flow:
+  _target_: src.models.optical_flow.sequence_optical_flow.SequenceOpticalFlow
+  model_name: "raft"
+  ckpt_path: "pretrained_models/raft-sintel.pth"
+  freeze: true
+  denormalizer: ${denormalizer}
+
+net:
+  _target_: src.models.dart.video_backbone.VideoBackbone
+  num_feat: ${model_conf.num_feat}
+  out_channels: ${model_conf.out_channels}
+  depths: ${model_conf.depths}
+  upscale: ${model_conf.upscale}
+  use_pre_mask: ${model_conf.use_pre_mask}
+  use_adaln_zero: ${model_conf.use_adaln_zero}
+  expose_gate_mask_logits: ${model_conf.expose_gate_mask_logits}
+  cond_dim: ${model_conf.cond_dim}
+  cond_hidden_dim: ${model_conf.cond_hidden_dim}
+  optical_flow: ${optical_flow}
+  forward_resblocks: ${model_conf.forward_resblocks}
+  backward_resblocks: ${model_conf.backward_resblocks}
+  forward_aggregation: ${model_conf.forward_aggregation}
+  backward_aggregation: ${model_conf.backward_aggregation}
+
+discriminator:
+  _target_: src.losses.gan.discriminator_3d.Discriminator3D
+  in_channels: ${model_conf.out_channels}
+  base_channels: ${model_conf.discriminator_base_channels}
+  use_spectral_norm: ${model_conf.discriminator_use_spectral_norm}
+  use_sigmoid: ${model_conf.discriminator_use_sigmoid}
+
+model:
+  _target_: src.models.dart.dart_restoration.DARTAdversarialRestorationModel
+  optical_flow: null
+  discriminator: ${discriminator}
+  denormalizer: ${denormalizer}
+  net: ${net}
+  adversarial_loss: ${losses.adversarial_loss}
+  loss: ${losses.weighted_multi_loss}
+  degradation_aware_loss_config: ${losses.degradation_aware_loss}
+  generator_optimizer_config: ${model_conf.generator_optimizer_config}
+  discriminator_optimizer_config: ${model_conf.discriminator_optimizer_config}
+
+trainer:
+  _target_: pytorch_lightning.Trainer
+  max_epochs: 20
+  accelerator: "auto"
+  devices: -1  # all visible GPUs; the paper used 2x A100 (1 clip per GPU)
+  num_nodes: 1
+  precision: "16-mixed"
+  # DDP on multi-GPU / SLURM; scripts/train.py switches to "auto" on one device.
+  strategy: "ddp_find_unused_parameters_true"
+  log_every_n_steps: 1000
+  val_check_interval: 1.0
+  check_val_every_n_epoch: 4
+  fast_dev_run: false
+  callbacks:
+    - _target_: pytorch_lightning.callbacks.ModelCheckpoint
+      dirpath: "outputs/checkpoints/${run.name}/${now:%Y-%m-%d}/"
+      monitor: "val/metrics/lpips"
+      filename: "best-model-{epoch:02d}-{val/metrics/lpips:.4f}"
+      save_top_k: 1
+      mode: "min"
+      save_last: true
+    - _target_: pytorch_lightning.callbacks.ModelCheckpoint
+      dirpath: "outputs/checkpoints/${run.name}/${now:%Y-%m-%d}/"
+      filename: "epoch-{epoch:02d}"
+      save_top_k: -1
+      every_n_epochs: 1
+      save_on_train_epoch_end: true
+
+hydra:
+  job:
+    chdir: false
+  run:
+    dir: outputs/${now:%Y-%m-%d}/${now:%H-%M-%S}h

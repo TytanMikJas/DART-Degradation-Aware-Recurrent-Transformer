@@ -1,0 +1,64 @@
+# Score restored frames with the evaluation protocol of the paper.
+#
+# Works for the frames of any model: point each `generated` path at a folder of
+# restored frames (<root>/<clip>/<frame>.png). Sets whose `generated` folder does
+# not exist are skipped.
+#
+# Usage:
+#   python scripts/evaluate.py                                # outputs of scripts/test.py
+#   python scripts/evaluate.py results_dir=outputs/results/my_model
+#   python scripts/evaluate.py data.datasets.srwov.paths.generated=<dir>
+
+seed: 3000
+
+# Restored frames: <results_dir>/<set>/<clip>/<frame>.png (the layout of scripts/test.py).
+results_dir: outputs/results/dart
+
+data:
+  datasets:
+    # Synthetic proxy set: full-reference (PSNR, SSIM, LPIPS) + no-reference metrics
+    synthetic:
+      paths:
+        generated: ${results_dir}/synthetic
+        gt: data/synthetic_eval/gt
+
+    # AbsoluteDegradation real benchmark: no-reference metrics only
+    absolutedegradation:
+      paths:
+        generated: ${results_dir}/absolutedegradation
+
+    # SRWOV real benchmark: no-reference metrics only
+    srwov:
+      paths:
+        generated: ${results_dir}/srwov
+
+  batch_size: 8
+  num_workers_per_dataset: 2
+  image_extensions:
+    - ".png"
+    - ".jpeg"
+    - ".jpg"
+    - ".bmp"
+    - ".tiff"
+    - ".webp"
+
+  transform: []
+
+
+metrics_handler:
+  _target_: src.metrics.metrics_handler.MetricsHandler
+  # Metrics reported in the paper. Other pyiqa metrics can be added,
+  # e.g. brisque or niqe.
+  metrics:
+    - psnr
+    - ssim
+    - lpips
+    - clipiqa+
+    - musiq
+    - maniqa
+
+# Where the metrics table is written (CSV).
+output_csv: ${results_dir}/metrics.csv
+
+# Optional Lightning logger config (e.g. a WandbLogger) that receives the results table.
+logger: null

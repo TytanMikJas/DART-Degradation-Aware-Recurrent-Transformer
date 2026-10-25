@@ -1,0 +1,13 @@
+# @package _global_
+# Table 4, "- AdaLN injection": no AdaLN-Zero degradation conditioning (Sec. 3.4).
+# Usage: python scripts/train.py --config-name ablation/minus_adaln
+
+defaults:
+  - /train
+  - _self_
+
+run:
+  name: "ablation_minus_adaln"
+
+model_conf:
+  use_adaln_zero: false
